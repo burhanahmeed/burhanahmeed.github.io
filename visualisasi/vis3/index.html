@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title></title>
+    <link rel="stylesheet" type="text/css" href="multiline.css">
+    <script src="http://d3js.org/d3.v3.js" charset="utf-8"></script>
+    <!--<script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>-->
+</head>
+<body>
+    <style type="text/css">
+        html, body{
+    background-color: #eeeeee;
+  }
+  .intro{
+    padding: 20px;
+  }
+  .card{
+    background-color: white;
+    border-radius: 10px;
+    margin: 10px 25px;
+    padding: 10px;
+  }
+    </style>
+<div class="chart-wrapper" id="chart-line1"></div>
+ <div id="barchart"></div>
+  <div class="card">
+  <h4>Alasan Visualisasi</h4>
+<p>Dari visualisasi ini akan diketahui perbandingan antara target dari donasi yang dicapai dengan donasi yang berhasil dikumpulkan per tahun. Dari sini diketahui seberapa banyak goals donasi yang didapatkan serta hasil donasi yang didapatkan setiap tahunnya, apakah meningkat atau menurun.</p>
+<h4>Penjelasan Visualisasi</h4>
+<p>Visualisasi ini akan menggunakan line chart yang mana akan menggunakan kolom ‘usd goal real’ dan ‘usd pledged real’ dimana akan dikelompokkan berdasarkan tahun. 
+Visualisasi ini menggunakan filter berupa tahunan dan dilakukan aggregate untuk data usd goal dan usd pledged. Dengan begitu akan dapat dimappingkan ke line chart degan mudah.
+</p>
+<h4>Dari Chartblock (<a href="https://www.chartblocks.com/en/support/faqs/faq/when-to-use-a-line-chart">Disini</a>)</h4>
+<p>Visualisasi line chart pada umumnya digunakan untuk mengetahui trends atau dari pattern dari suatu data. Biasanya line chart dikelompokkan pada berdasarkan tahunan atau bulanan dengan begitu maka trends akan dapat terbaca berurutas secara periodic.</p>
+</div>
+
+<script type="text/javascript">
+    d3.csv('../kickstarter.csv', function(error, data) {    
+
+    data.forEach(function (d) {
+        group = d3.nest()
+            .key(function(d){
+                var date = new Date(d.launched)
+                var year = date.getFullYear()
+                return year;
+            })
+            .rollup(function(a){
+                return {
+                    'goal': d3.sum(a, function(d) {return parseInt(d.usd_goal_real)}), 
+                    'pledged': d3.sum(a, function(d) {return parseInt(d.usd_pledged_real)})
+                } 
+                // return d3.sum(a, function(d) {return d.backers})
+            })
+            .entries(data);            
+    });
+    
+    var newData = [];
+    group.forEach(function(d){        
+        newData.push({
+            year: d.key,
+            goal: d.values.goal,
+            pledged: d.values.pledged
+        })
+    })
+
+    console.log(newData)
+
+
+    var chart = makeLineChart(newData, 'year', {
+        'Goals': {column: 'goal'},
+        'Pledged': {column: 'pledged'}
+    }, {xAxis: 'Years', yAxis: 'Amount'});
+    chart.bind("#chart-line1");
+    chart.render();
+
+});
+
+//     d3.csv('multiline_data.csv', function(error, data) {
+//     data.forEach(function (d) {
+//         d.year = +d.year;
+//         d.variableA = +d.variableA;
+//         d.variableB = +d.variableB;
+//         d.variableC = +d.variableC;
+//         d.variableD = +d.variableD;
+//     });
+
+//     console.log(data)
+
+//     var chart = makeLineChart(data, 'year', {
+//         'Variable A': {column: 'variableA'},
+//         'Variable B': {column: 'variableB'},
+//         'Variable C': {column: 'variableC'},
+//         'Variable D': {column: 'variableD'}
+//     }, {xAxis: 'Years', yAxis: 'Amount'});
+//     chart.bind("#chart-line1");
+//     chart.render();
+
+// });
+</script>
+<script src="multiline.js" charset="utf-8"></script>
+</body>
+</html>

@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<head>
+  <meta charset="utf-8">
+  <title>Visualisasi 1</title>
+</head>
+<style>
+
+body {
+  font: 12px sans-serif;
+}
+
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+
+.x.axis path {
+  display: none;
+}
+
+html, body{
+    background-color: #eeeeee;
+  }
+  .intro{
+    padding: 20px;
+  }
+  .card{
+    background-color: white;
+    border-radius: 10px;
+    margin: 10px 25px;
+    padding: 10px;
+  }
+
+</style>
+<body>
+  
+  <div id="barchart"></div>
+  <div class="card">
+  <h4>Alasan Visualisasi</h4>
+<p>Visualisasi ini akan berguna untuk mengetahui Negara mana yang sering target crowdfundnya tidak tercapai. Dengan begitu maka dapat digali lagi alasan apa yang membuat crowdfund dari Negara tertentu tidak tercapai.</p>
+<h4>Penjelasan Visualisasi</h4>
+<p>Visualisasi bagian ini menggunakan grafik berupa histogram yang dapat membandingkan status crowdfund antara status sukses dan status yang gagal yang dikelompokkan per setiap negara. Pada visualisasi ini akan berhubungan dengan kolom state dan kolom country. Dari kolom state akan dikelompokkan berdasarkan kolom country untuk dilakukan visualisasi berupa histogram.
+Histogram atau barchart ini menggunakan visualisasi dengan menggunakan posisi horizontal pada valuenya dan pengelompokkannya secara vertical. Untuk penggunaan warna menggunakan pewarnaan Hue dimana dengan menggunakan metode pewarnaan ini maka akan dengan mudah ditangkap oleh orang yang melihat.
+</p>
+<h4>Sumber BBC (<a href="http://www.bbc.co.uk/skillswise/factsheet/ma37grap-e3-f-comparing-data-using-bar-charts">Disini</a>)</h4>
+<p>Penggunaan barchart pada artikel diatas berguna sebagai pembanding. Mereka membandingkan hewan peliharaan favorit antara pria dan wanita. Dengan begitu pembaca akan secara langsung dapat melihat seekor hewan lebih difavoritkan oleh mana pria atau wanita.</p>
+</div>
+
+
+<script src="https://d3js.org/d3.v3.min.js"></script>
+<script>
+
+var margin = {top: 20, right: 20, bottom: 30, left: 40},
+    width = 960 - margin.left - margin.right,
+    height = 500 - margin.top - margin.bottom;
+
+var x0 = d3.scale.ordinal()
+    .rangeRoundBands([0, width], .1);
+
+var x1 = d3.scale.ordinal();
+
+var y = d3.scale.linear()
+    .range([height, 0]);
+
+var xAxis = d3.svg.axis()
+    .scale(x0)
+    .tickSize(0)
+    .orient("bottom");
+
+var yAxis = d3.svg.axis()
+    .scale(y)
+    .orient("left");
+
+var color = d3.scale.ordinal()
+    .range(["#00b5cc","#d91e18", "#23cba7", "#c5eff7"]);
+
+var svg = d3.select('#barchart').append("svg")
+    .attr("width", width + margin.left + margin.right)
+    .attr("height", height + margin.top + margin.bottom)
+  .append("g")
+    .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
+
+d3.csv("../kickstarter.csv", function(err, data) {
+  data.forEach(function(d) {
+      var priority_order = ['successful', 'live', 'canceled', "failed"];
+      group = d3.nest()
+      .key(function(d){
+        return d.country;
+      }).key(function(s){
+        return s.state;
+      }).sortKeys(function(a,b) { return priority_order.indexOf(a) - priority_order.indexOf(b); })
+      .rollup((function(value){
+        return value.length;
+      })).entries(data);
+    });
+
+    console.log(group);
+    var country = group.map(function(d){
+        return d.key;
+    });
+    var state = group[1].values.map(function(d) {
+        return d.key
+    });
+    x0.domain(country);
+    x1.domain(state).rangeRoundBands([0, x0.rangeBand()]);
+  y.domain([0, d3.max(group, function(key) {
+    return d3.max(key.values, function (d){
+        return d.values;
+      });
+  })]);
+
+  svg.append("g")
+      .attr("class", "x axis")
+      .attr("transform", "translate(0," + height + ")")
+      .call(xAxis);
+
+  svg.append("g")
+      .attr("class", "y axis")
+      .style('opacity','0')
+      .call(yAxis)
+  .append("text")
+      .attr("transform", "rotate(-90)")
+      .attr("y", 6)
+      .attr("dy", ".71em")
+      .style("text-anchor", "end")
+      .style('font-weight','bold')
+      .text("Value");
+
+  svg.select('.y').transition().duration(500).delay(1300).style('opacity','1');
+
+  var slice = svg.selectAll(".slice")
+      .data(group)
+      .enter().append("g")
+      .attr("class", "g")
+      .attr("transform",function(d) { return "translate(" + x0(d.key) + ",0)"; });
+
+  slice.selectAll("rect")
+      .data(function(d) { return d.values; })
+  .enter().append("rect")
+      .attr("width", x1.rangeBand())
+      .attr("x", function(d) { return x1(d.key); })
+      .style("fill", function(d) { return color(d.key) })
+      .attr("y", function(d) { return y(0); })
+      .attr("height", function(d) { return height - y(0); })
+      .on("mouseover", function(d) {
+          d3.select(this).style("fill", d3.rgb(color(d.key)).darker(2));
+      })
+      .on("mouseout", function(d) {
+          d3.select(this).style("fill", color(d.key));
+      });
+
+  slice.selectAll("rect")
+      .transition()
+      .delay(function (d) {return Math.random()*1000;})
+      .duration(1000)
+      .attr("y", function(d) { return y(d.values); })
+      .attr("height", function(d) { return height - y(d.values); });
+
+  //Legend
+  var legend = svg.selectAll(".legend")
+      .data(group[1].values.map(function(d) { return d.key; }).reverse())
+  .enter().append("g")
+      .attr("class", "legend")
+      .attr("transform", function(d,i) { return "translate(0," + i * 20 + ")"; })
+      .style("opacity","0");
+
+  legend.append("rect")
+      .attr("x", width - 18)
+      .attr("width", 18)
+      .attr("height", 18)
+      .style("fill", function(d) { return color(d); });
+
+  legend.append("text")
+      .attr("x", width - 24)
+      .attr("y", 9)
+      .attr("dy", ".35em")
+      .style("text-anchor", "end")
+      .text(function(d) {return d; });
+
+  legend.transition().duration(500).delay(function(d,i){ return 1300 + 100 * i; }).style("opacity","1");
+
+});
+
+</script>
