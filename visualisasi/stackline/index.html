@@ -1,211 +1,157 @@
 <!DOCTYPE html>
-<meta charset="utf-8">
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Visualisasi 5 - Stacked Area Chart</title>
+</head>
+<style>
 
-<!-- Load d3.js & color scale-->
-<script src="http://d3js.org/d3.v4.js"></script>
-<script src="https://d3js.org/d3-scale-chromatic.v1.min.js"></script>
+body {
+  font: 12px sans-serif;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
+.axis path,
+.axis line {
+  fill: none;
+  stroke: #000;
+  shape-rendering: crispEdges;
+}
 
-<!-- Create a div where the graph will take place -->
-<div id="my_dataviz"></div>
-<script>
+.x.axis path {
+  display: none;
+}
 
-// set the dimensions and margins of the graph
-var margin = {top: 60, right: 230, bottom: 50, left: 50},
-    width = 660 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
+html, body{
+    background-color: #eeeeee;
+  }
+  .intro{
+    padding: 20px;
+  }
+  .card{
+    background-color: white;
+    border-radius: 10px;
+    margin: 10px 25px;
+    padding: 10px;
+  }
 
-// append the svg object to the body of the page
-var svg = d3.select("#my_dataviz")
-  .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
+</style>
+<body>
+  
+  <script src="//d3js.org/d3.v3.min.js"></script>
+  <script>
 
-// Parse the Data
-// d3.csv("https://raw.githubusercontent.com/holtzy/data_to_viz/master/Example_dataset/5_OneCatSevNumOrdered_wide.csv", function(data) {
- d3.csv('../kickstarter.csv', function(error, data) {    
+  var format = d3.time.format("%d-%m-%y");
 
-  //////////
-  // GENERAL //
-  //////////
+  var margin = {top: 20, right: 30, bottom: 30, left: 40},
+      width = 960 - margin.left - margin.right,
+      height = 500 - margin.top - margin.bottom;
 
-  // List of groups = header of the csv files
-  var keys = data.columns.slice(1)
+  var x = d3.time.scale()
+      .range([0, width]);
 
-  // color palette
-  var color = d3.scaleOrdinal()
-    .domain(keys)
-    .range(d3.schemeSet2);
+  var y = d3.scale.linear()
+      .range([height, 0]);
 
-  //stack the data?
-  var stackedData = d3.stack()
-    .keys(keys)
-    (data)
+  var z = d3.scale.category20c();
 
-    console.log(data)
+  var xAxis = d3.svg.axis()
+      .scale(x)
+      .orient("bottom")
+      .ticks(d3.time.months);
 
+  var yAxis = d3.svg.axis()
+      .scale(y)
+      .orient("left");
 
+  var stack = d3.layout.stack()
+      .offset("zero")
+      .values(function(d) { return d.values; })
+      .x(function(d) { return d.deadline; })
+      .y(function(d) { return d.usd_pledged_real; });
 
-  //////////
-  // AXIS //
-  //////////
+  var nest = d3.nest()
+      .key(function(d) { return d.state; });
 
-  // Add X axis
-  var x = d3.scaleLinear()
-    .domain(d3.extent(data, function(d) { return d.year; }))
-    .range([ 0, width ]);
-  var xAxis = svg.append("g")
-    .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x).ticks(5))
+  var area = d3.svg.area()
+      .interpolate("cardinal")
+      .x(function(d) { return x(d.deadline); })
+      .y0(function(d) { return y(d.y0); })
+      .y1(function(d) { return y(d.y0 + d.y); });
 
-  // Add X axis label:
-  svg.append("text")
-      .attr("text-anchor", "end")
-      .attr("x", width)
-      .attr("y", height+40 )
-      .text("Time (year)");
-
-  // Add Y axis label:
-  svg.append("text")
-      .attr("text-anchor", "end")
-      .attr("x", 0)
-      .attr("y", -20 )
-      .text("Kick starter")
-      .attr("text-anchor", "start")
-
-  // Add Y axis
-  var y = d3.scaleLinear()
-    .domain([0, 200000])
-    .range([ height, 0 ]);
-  svg.append("g")
-    .call(d3.axisLeft(y).ticks(5))
-
-
-
-  //////////
-  // BRUSHING AND CHART //
-  //////////
-
-  // Add a clipPath: everything out of this area won't be drawn.
-  var clip = svg.append("defs").append("svg:clipPath")
-      .attr("id", "clip")
-      .append("svg:rect")
-      .attr("width", width )
-      .attr("height", height )
-      .attr("x", 0)
-      .attr("y", 0);
-
-  // Add brushing
-  var brush = d3.brushX()                 // Add the brush feature using the d3.brush function
-      .extent( [ [0,0], [width,height] ] ) // initialise the brush area: start at 0,0 and finishes at width,height: it means I select the whole graph area
-      .on("end", updateChart) // Each time the brush selection changes, trigger the 'updateChart' function
-
-  // Create the scatter variable: where both the circles and the brush take place
-  var areaChart = svg.append('g')
-    .attr("clip-path", "url(#clip)")
-
-  // Area generator
-  var area = d3.area()
-    .x(function(d) { return x(d.data.year); })
-    .y0(function(d) { return y(d[0]); })
-    .y1(function(d) { return y(d[1]); })
-
-  // Show the areas
-  areaChart
-    .selectAll("mylayers")
-    .data(stackedData)
-    .enter()
-    .append("path")
-      .attr("class", function(d) { return "myArea " + d.key })
-      .style("fill", function(d) { return color(d.key); })
-      .attr("d", area)
-
-  // Add the brushing
-  areaChart
+  var svg = d3.select("body").append("svg")
+      .attr("width", width + margin.left + margin.right)
+      .attr("height", height + margin.top + margin.bottom)
     .append("g")
-      .attr("class", "brush")
-      .call(brush);
+      .attr("transform", "translate(" + margin.left + "," + margin.top + ")");
 
-  var idleTimeout
-  function idled() { idleTimeout = null; }
+  d3.csv("../kickstarter.csv", function(error, data) {
+    if (error) throw error;
 
-  // A function that update the chart for given boundaries
-  function updateChart() {
+    data.forEach(function(d) {
+      d.deadline = format.parse(d.deadline);
+      d.usd_pledged_real = +d.usd_pledged_real;
+    });
 
-    extent = d3.event.selection
+    var layers = stack(nest.entries(data));
 
-    // If no selection, back to initial coordinate. Otherwise, update X axis domain
-    if(!extent){
-      if (!idleTimeout) return idleTimeout = setTimeout(idled, 350); // This allows to wait a little bit
-      x.domain(d3.extent(data, function(d) { return d.year; }))
-    }else{
-      x.domain([ x.invert(extent[0]), x.invert(extent[1]) ])
-      areaChart.select(".brush").call(brush.move, null) // This remove the grey brush area as soon as the selection has been done
-    }
+    x.domain(d3.extent(data, function(d) { return d.deadline; }));
+    y.domain([0, d3.max(data, function(d) { return d.y0 + d.y; })]);
 
-    // Update axis and area position
-    xAxis.transition().duration(1000).call(d3.axisBottom(x).ticks(5))
-    areaChart
-      .selectAll("path")
-      .transition().duration(1000)
-      .attr("d", area)
-    }
+    svg.selectAll(".layer")
+        .data(layers)
+      .enter().append("path")
+        .attr("class", "layer")
+        .attr("d", function(d) { return area(d.values); })
+        .style("fill", function(d, i) { return z(i); });
 
+    svg.append("g")
+        .attr("class", "x axis")
+        .attr("transform", "translate(0," + height + ")")
+        .call(xAxis);
 
+    svg.append("g")
+        .attr("class", "y axis")
+        .call(yAxis);
+  });
 
-    //////////
-    // HIGHLIGHT GROUP //
-    //////////
+  </script>
+   
+  <div id="barchart"></div>
+  <div class="card">
+  <h3>STACKED AREA CHART</h3>
+  <h4>Alasan Visualisasi</h4>
+    <p>Visualisasi ini dapat berguna untuk mengetahui tren perkembangan dana yang mengalir dari kontributor ditinjau dari bulan ke bulan maupun dari tahun ke tahun.  
+    </p>
+    <h4>Penjelasan Visualisasi</h4>
+    <p>Stacked area chart ini memiliki 2 sumbu. Sumbu y akan menunjukkan jumlah dolar (‘usd_pledged_real’) yang didapatkan dari kontributor project. Sumbu x menunjukkan milestone waktu. Sedangkan warna yang berbeda pada tiap area pada chart menunjukkan lima kategori status (‘state’) dari project, yaitu cancelled, failed, live, successful, suspended, dan undefined.  
+    <ul>
+        <h4>Visual Encoding</h4>
+     <li>
+        <h4>what</h4> 
+        Elemen yang digunakan dalam visualisasi ini adalah line dan fill pada area.
+     </li>
+      <li>
+        <h4>where</h4> 
+        Sumbu y akan menunjukkan jumlah dolar (‘usd_pledged_real’) yang didapatkan dari kontributor project. Sumbu x menunjukkan milestone waktu. Sedangkan warna yang berbeda pada tiap area pada chart menunjukkan lima kategori status (‘state’) dari project, yaitu cancelled, failed, live, successful, suspended, dan undefined.
+     </li>
+      <li>
+        <h4>how</h4> 
+        Semakin tinggi area pada sumbu y, menandakan semakin banyak dolar yang mengalir. Jika semakin rendah, maka sebaliknya, menandakan semakin sedikit dolar yang mengalir. Sedangkan untuk sumbu x, semakin ke kanan maka menunjukkan milestone waktu yang terbaru.
+     </li>
+      <li>
+        <h4>when</h4> 
+        Visualisasi stacked area chart yang kami buat bersifat statis sehingga belum ada pergerakan/animasinya.
+     </li>
+    </ul>
 
-    // What to do when one group is hovered
-    var highlight = function(d){
-      console.log(d)
-      // reduce opacity of all groups
-      d3.selectAll(".myArea").style("opacity", .1)
-      // expect the one that is hovered
-      d3.select("."+d).style("opacity", 1)
-    }
+    </p>
+    <h4>Sumber BBC (<a href="https://www.bbc.com/news/world-asia-china-46558562">Disini</a>)</h4>
+    <p>Penggunaan Stacked Area Chart pada artikel di atas digunakan untuk mengekplorasi jumlah populasi penduudk China dari tahun ke tahun dengan membedakan area chart berdasarkan kelompok umur. Pada chart tersebut terdapat 3 kelompok umur, yaitu 0-14 tahun, 15-64 tahun, dan 65 tahun ke atas. Chart tersebut memudahkan pembaca untuk mengetahui bagaimana pergerakan populasi di negara China, plus dimudahkan dengan persebaran umurnya. Visualisasi ini sangat relevan dengan visualisasi kami yaitu stacked area chart untuk mengetahui aliran dana dari tahun ke tahun dengan grouping berdasarkan status projectnya yaitu cancelled, failed, live, successful, suspended, dan undefined. </p>
+    </div>
 
-    // And when it is not hovered anymore
-    var noHighlight = function(d){
-      d3.selectAll(".myArea").style("opacity", 1)
-    }
-
-
-
-    //////////
-    // LEGEND //
-    //////////
-
-    // Add one dot in the legend for each name.
-    var size = 20
-    svg.selectAll("myrect")
-      .data(keys)
-      .enter()
-      .append("rect")
-        .attr("x", 400)
-        .attr("y", function(d,i){ return 10 + i*(size+5)}) // 100 is where the first dot appears. 25 is the distance between dots
-        .attr("width", size)
-        .attr("height", size)
-        .style("fill", function(d){ return color(d)})
-        .on("mouseover", highlight)
-        .on("mouseleave", noHighlight)
-
-    // Add one dot in the legend for each name.
-    svg.selectAll("mylabels")
-      .data(keys)
-      .enter()
-      .append("text")
-        .attr("x", 400 + size*1.2)
-        .attr("y", function(d,i){ return 10 + i*(size+5) + (size/2)}) // 100 is where the first dot appears. 25 is the distance between dots
-        .style("fill", function(d){ return color(d)})
-        .text(function(d){ return d})
-        .attr("text-anchor", "left")
-        .style("alignment-baseline", "middle")
-        .on("mouseover", highlight)
-        .on("mouseleave", noHighlight)
-
-})
-</script>
+</html>
