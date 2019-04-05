@@ -1,52 +1,13 @@
 <!DOCTYPE html>
 <head>
   <meta charset="utf-8">
-  <title>Visualisasi 5</title>
   <script src="https://d3js.org/d3.v4.min.js"></script>
   <style>
-body {
-  font: 12px sans-serif;
-}
-.axis path,
-.axis line {
-  fill: none;
-  stroke: #000;
-  shape-rendering: crispEdges;
-}
-.x.axis path {
-  display: none;
-}
-html, body{
-    background-color: #eeeeee;
-  }
-  .intro{
-    padding: 20px;
-  }
-  .card{
-    background-color: white;
-    border-radius: 10px;
-    margin: 12px 25px;
-    padding: 10px;
-  }
-</style>
+    body { margin:0;position:fixed;top:0;right:0;bottom:0;left:0; text-align: center; }
+  </style>
 </head>
 
 <body>
-
-<div id="barchart"></div>
-<div class="card">
-<h4>Alasan Visualisasi</h4>
-<p>Visualisasi ini akan menampilkan perbandingan persentase status project yang dilakukan dimana nantinya terdapat 6 status project yaitu succesfull, failed, canceled, suspended, live dan undefined sehingga dapat diketahui besarnya total persentase masing-masing status project.</p>
-<h4>Penjelasan Visualisasi</h4>
-<p>Visualisasi ini akan menggunakan bentuk doughnut dengan menampilkan persentase dari masing-masing status project.</p>
-<h4>Sumber Corsair (<a href="(https://charting-ahead.corsairs.network/doughnuts-vs-pie-a-visual-primer-629b846aac67)">Disini</a>)</h4>
-<p>Grafik berbentuk doughnut dipilih karena lubang yang berada ditengah doughnut dapat menarik perhatian audience sehingga audience dapat lebih fokus ke grafik. Selain itu, doughnut juga dapat dipahami dengan mudah karena desainnya yang simple namun dapat memberikan informasi dengan cepat.</p>
-<h4>Properties of Data</h4>
-<p>Properti data yang digunakan dalam grafik doughnut ini merupakan quantitative dimana grafik ini menunjukkan perbedaan perbandingan tiap state berdasarkan jumlah project pada setiap state yang ada.</p>
-<h4>Properties of Image</h4>
-<p> Grafik ini menggunakan bentuk lingkaran dalam 2 dimensi, dimana posisi dari masing-masing state ditentukan berdasarkan luas bagian lingkaran dari masing-masing state serta warna (color intensity) dari masing-masing bagian lingkaran tersebut.</p>
-</div>
-
   <script>
     var data = d3.csv('../kickstarter.csv', function(error, datas) { 
         datas.forEach(function(d){
@@ -60,7 +21,7 @@ html, body{
 
         
         data = []
-        color = ["#08519c", "#3182bd", "#6baed6", "#bdd7e7", "#eff3ff"]
+        color = ['#000000', '#f8b70a', '#6149c6', '#9f8170', '#8ABD4A']
         group.forEach(function(d, i){
             data.push({
                 name: d.key,
@@ -104,9 +65,9 @@ html, body{
       .enter().append("g");    
 
     g.append("path")
-      .attr("d", arc)
+        .attr("d", arc)
       .style("fill", function(d,i) {
-      return d.data.color;
+        return d.data.color;
       });
 
     g.append("text")
@@ -118,16 +79,17 @@ html, body{
       })
       .attr("dy", ".50em")
       .style("text-anchor", "middle")
-	  .attr('font-size', '1.2em')
       .text(function(d) {
-        if(d.data.percentage > .5) 
-        return (d.data.name + ' ' +d.data.percentage + '%');
+        if(d.data.percentage < 8) {
+          return d.data.name;
+        }
+        return d.data.name + ' ' +d.data.percentage + '%';
       });
         
     g.append("text")
        .attr("text-anchor", "middle")
-       .attr('font-size', '4em')
-       .attr('y', 20)
+         .attr('font-size', '4em')
+         .attr('y', 20)
        .text(totalCount);
 })
   </script>
