@@ -42,10 +42,13 @@ html, body{
 </style>
 <body>
   
-  <script src="//d3js.org/d3.v3.min.js"></script>
+  <script src="https://fastcdn.org/D3.js/3.5.6/d3.min.js"></script>
+  <script src="https://d3js.org/d3-time.v1.min.js"></script>
+<script src="https://d3js.org/d3-time-format.v2.min.js"></script>
   <script>
 
-  var format = d3.time.format("%d-%m-%y");
+  var format = d3.timeFormat("%m/%d/%y");
+  var format1 = d3.time.format("%m/%d/%y");
 
   var margin = {top: 20, right: 30, bottom: 30, left: 40},
       width = 960 - margin.left - margin.right,
@@ -62,7 +65,7 @@ html, body{
   var xAxis = d3.svg.axis()
       .scale(x)
       .orient("bottom")
-      .ticks(d3.time.months);
+      .ticks(d3.time.format('%y'));
 
   var yAxis = d3.svg.axis()
       .scale(y)
@@ -93,10 +96,11 @@ html, body{
     if (error) throw error;
 
     data.forEach(function(d) {
-      d.deadline = format.parse(d.deadline);
+      d.deadline = format(new Date(d.deadline));
       d.usd_pledged_real = +d.usd_pledged_real;
+      // console.log(format(new Date('2019-02-04')))
     });
-
+console.log(data)
     var layers = stack(nest.entries(data));
 
     x.domain(d3.extent(data, function(d) { return d.deadline; }));
