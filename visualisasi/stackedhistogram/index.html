@@ -85,7 +85,7 @@ var svg = d3.select("body").append("svg")
 
 d3.csv("../kickstarter.csv", function(err, data) {
 	data.forEach(function(d) {
-      var priority_order = ['successful', "failed"];
+      var priority_order = ['successful', "failed", "cancelled"];
       group = d3.nest()
       .key(function(d){
 			var date = new Date(d.launched)
